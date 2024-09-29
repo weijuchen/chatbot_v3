@@ -27,11 +27,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 #  Created function to load multiple PDFs
-# pdf_folder_path=r"D:\Computer Science\AI\LLM model\chatbot_v3\sourcedata"
+
 pdf_folder_path = os.getenv("PDF_FOLDER_PATH")
-# pdf_folder_path = "/chat_bot/06afterclean"
-# pdf_folder_path = "06afterclean"  # 指向 PDF 資料夾
-# pdf_folder_path = r"D:\Computer Science\AI\LLM model\chat_bot\06afterclean"
+
 def load_multiple_pdfs(pdf_folder_path):  # ***
     docs = []  
     # 檢查資料夾是否存在
@@ -52,10 +50,7 @@ pdf_docs = load_multiple_pdfs(pdf_folder_path)
 
 openai_api_key = os.getenv("OPENAI_API_KEY")
 def create_vector():
-    # pdf_folder_path = "/chat_bot/06afterclean"
-    # pdf_folder_path=r"D:\Computer Science\AI\LLM model\chat_bot\06afterclean"
-    # pdf_folder_path = r"D:\Computer Science\AI\LLM model\chatbot_v3\sourcedata"
-    # pdf_folder_path=r"D:\Computer Science\AI\LLM model\github_chat_bot\chat_bot\06afterclean"
+
 
     # load your PDFs
     pdf_folder_path = os.getenv("PDF_FOLDER_PATH")
@@ -69,25 +64,20 @@ def create_vector():
     )
     texts = text_splitter.split_documents(docs)
 
-    # embed the chunks into vectorstore (FAISS) 使用 OpenAI 嵌入將文本塊轉換為向量
-    # 步驟 1：創建一個 OpenAIEmbeddings 的實例，該實例將負責將文本塊轉換為數值向量（嵌入），這是使用 OpenAI 模型生成的嵌入。
-
+    # embed the chunks into vectorstore (FAISS) 
     embeddings = OpenAIEmbeddings()
     if not embeddings:
         print("Error: No embeddings generated. Check the input data.")
     else:
-        # 步驟 2：調用 FAISS.from_documents() 方法，將拆分的文本塊 (texts) 與它們的嵌入一起存儲到 FAISS 向量存儲庫中。FAISS 是一種用來進行高效向量檢索的工具。
-        vectorstore = FAISS.from_documents(texts, embeddings)
+        try:
+            vectorstore = FAISS.from_documents(texts, embeddings)
+            # save the vectorstore to disk
+            vectorstore.save_local(os.getenv("FAISS_VECTORSTORE_PATH"))
+            print("vectorstore created")
+            return vectorstore
+        except Exception as e:
+            print(f"Error creating vectorstore: {e}")
 
-        # save the vectorstore to disk
-        # The FAISS vector store is saved locally to the file "faiss_midjourney_docs". This allows you to reload the vector store later without recomputing the embeddings.
-
-        # vectorstore.save_local("faiss_midjourney_docs")
-        vectorstore.save_local(os.getenv("FAISS_VECTORSTORE_PATH"))
-        # vectorstore.save_local("../faiss_vectorstore")
-
-        print("vectorstore created")
-        return vectorstore
 
 
 # 第二個函數：直接加載已經存好的向量資料庫

@@ -63,10 +63,13 @@ embeddings = OpenAIEmbeddings()
 # vectorstore.save_local("faiss_midjourney_docs")
 
 # Load the FAISS Vector Store with Dangerous Deserialization Enabled
+try:
+    retriever = FAISS.load_local(
+        "faiss_vectorstore", embeddings, allow_dangerous_deserialization=True
+    ).as_retriever(search_type="similarity", search_kwargs={"k": 1})
+except Exception as e:
+    print(f"Error loading vectorstore: {e}")
 
-retriever = FAISS.load_local(
-    "faiss_vectorstore", embeddings, allow_dangerous_deserialization=True
-).as_retriever(search_type="similarity", search_kwargs={"k": 1})
 
 memory = ConversationBufferMemory(
     memory_key="chat_history",
@@ -124,13 +127,6 @@ def handle_message(event):
     line_bot_api.reply_message(event.reply_token, TextSendMessage(text=answer))
 
 
-# # 處理接收到的文字訊息
-# @handler.add(MessageEvent, message=TextMessage)
-# def handle_message(event):
-#     message = TextSendMessage(text=event.message.text)
-#     line_bot_api.reply_message(event.reply_token, message)
-
-
 @handler.add(MessageEvent, message=AudioMessage)
 # 處理接收到的音訊訊息
 def handle_AudioMessage(event):
@@ -143,9 +139,9 @@ def handle_AudioMessage(event):
             for chunk in audio_content.iter_content():
                 fd.write(chunk)
         # 載入音檔 呼叫openai api 模型 並進行語音轉換文字
-  
+
         if os.path.exists(path):
-         
+
             try:
                 # audio_file = open("/Users/your_username/Documents/temp
                 # .mp3", "rb")
@@ -157,10 +153,8 @@ def handle_AudioMessage(event):
                         model=model_id, file=audio_file
                     )
 
-                  
-
                     # get answer from qa_chain
-                    if response and hasattr(response, 'text'):
+                    if response and hasattr(response, "text"):
                         # print("here is the response:", response.text)
 
                         # 根據轉換的文字進行 Q&A 處理
@@ -174,23 +168,24 @@ def handle_AudioMessage(event):
                     else:
                         # 如果 response 不包含 text，給出錯誤提示
                         line_bot_api.reply_message(
-                            event.reply_token, TextSendMessage(text="無法取得語音轉文字的結果")
+                            event.reply_token,
+                            TextSendMessage(text="無法取得語音轉文字的結果"),
                         )
 
-                    
                     # response_qa = qa_chain({"question": response.text})
                     # answer = response_qa["answer"]
-                    
+
                     # line_bot_api.reply_message(
                     #     event.reply_token, TextSendMessage(text=answer)
                     # )
 
-            except openai.BadRequestError as e:        
+            except openai.BadRequestError as e:
                 # except openai.error.OpenAIError as e:
                 print(f"OpenAI API request failed: {e}")
                 line_bot_api.reply_message(
-                    event.reply_token, TextSendMessage(text="語音轉換文字失敗，請稍後再試。")
-            )    
+                    event.reply_token,
+                    TextSendMessage(text="語音轉換文字失敗，請稍後再試。"),
+                )
 
 
 if __name__ == "__main__":
