@@ -19,8 +19,8 @@ from linebot.models import MessageEvent, AudioMessage, TextMessage, TextSendMess
 
 # 使用pdf.py 中的get_qa_chain函數
 # from src.pdf import create_vector, load_vectorstore
-# from src.pdf import load_vectorstore
-from src.pdf import create_vector
+from src.pdf import load_vectorstore
+# from src.pdf import create_vector
 
 # load environment variable
 load_dotenv()
@@ -56,7 +56,7 @@ model = ChatOpenAI(
     # streamling means that the model response will be generated in a streaming fashion
 )
 # vectorstore = create_vector()
-vectorstore = create_vector()
+vectorstore = load_vectorstore()
 
 embeddings = OpenAIEmbeddings()
 # vectorstore = FAISS.load_local("faiss_midjourney_docs", embeddings)

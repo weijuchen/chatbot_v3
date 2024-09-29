@@ -50,8 +50,6 @@ pdf_docs = load_multiple_pdfs(pdf_folder_path)
 
 openai_api_key = os.getenv("OPENAI_API_KEY")
 def create_vector():
-
-
     # load your PDFs
     pdf_folder_path = os.getenv("PDF_FOLDER_PATH")
     docs = load_multiple_pdfs(pdf_folder_path)
@@ -79,17 +77,17 @@ def create_vector():
             print(f"Error creating vectorstore: {e}")
 
 
+# 第二個函數：直接加載已經存好的向量資料庫  我這樣做是為了閃過上面要載入pdf的步驟
 
-# 第二個函數：直接加載已經存好的向量資料庫
 # def load_vectorstore(vectorstore_path="faiss_midjourney_docs"):
+def load_vectorstore(vectorstore_path=os.getenv("FAISS_VECTORSTORE_PATH")):
+    try:
+        vectorstore = FAISS.load_local(vectorstore_path, OpenAIEmbeddings(),allow_dangerous_deserialization=True)
+        print(f"Vectorstore loaded from: {vectorstore_path}")
+        return vectorstore
+    except Exception as e:
+        print(f"Error loading vectorstore: {e}")
+        print("None")
+        return None
 
-#     try:
-#         vectorstore = FAISS.load_local(vectorstore_path, OpenAIEmbeddings(),allow_dangerous_deserialization=True)
-#         print(f"Vectorstore loaded from: {vectorstore_path}")
-#         return vectorstore
-#     except Exception as e:
-#         print(f"Error loading vectorstore: {e}")
-#         print("None")
-#         return None
-
-# create_vector()
+# load_vectorstore()
