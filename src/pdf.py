@@ -31,7 +31,7 @@ load_dotenv()
 # pdf_folder_path = os.getenv("PDF_FOLDER_PATH")
 
 # def load_multiple_pdfs(pdf_folder_path):  # ***
-#     docs = []  
+#     docs = []
 #     # 檢查資料夾是否存在
 #     if not os.path.exists(pdf_folder_path):
 #         print(f"Error: The directory {pdf_folder_path} does not exist.")
@@ -62,7 +62,7 @@ load_dotenv()
 #     )
 #     texts = text_splitter.split_documents(docs)
 
-#     # embed the chunks into vectorstore (FAISS) 
+#     # embed the chunks into vectorstore (FAISS)
 #     embeddings = OpenAIEmbeddings()
 #     if not embeddings:
 #         print("Error: No embeddings generated. Check the input data.")
@@ -91,3 +91,11 @@ def load_vectorstore(vectorstore_path=os.getenv("FAISS_VECTORSTORE_PATH")):
         return None
 
 # load_vectorstore()
+
+
+if __name__ == "__main__":
+    vectorstore = load_vectorstore()
+    if vectorstore is not None:
+        print("Vectorstore loaded successfully.")
+    else:
+        print("Failed to load vectorstore.")

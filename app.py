@@ -56,6 +56,15 @@ model = ChatOpenAI(
     # streamling means that the model response will be generated in a streaming fashion
 )
 # vectorstore = create_vector()
+
+# 確保 FAISS 向量存儲目錄存在
+vectorstore_path = os.getenv("FAISS_VECTORSTORE_PATH")
+
+if vectorstore_path:
+    os.makedirs(vectorstore_path, exist_ok=True)
+else:
+    print("FAISS_VECTORSTORE_PATH is not set.")
+
 vectorstore = load_vectorstore()
 
 embeddings = OpenAIEmbeddings()
