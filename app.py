@@ -20,6 +20,7 @@ from linebot.models import MessageEvent, AudioMessage, TextMessage, TextSendMess
 # 使用pdf.py 中的get_qa_chain函數
 # from src.pdf import create_vector, load_vectorstore
 from src.pdf import load_vectorstore
+
 # from src.pdf import create_vector
 
 # load environment variable
@@ -180,13 +181,6 @@ def handle_AudioMessage(event):
                             event.reply_token,
                             TextSendMessage(text="無法取得語音轉文字的結果"),
                         )
-
-                    # response_qa = qa_chain({"question": response.text})
-                    # answer = response_qa["answer"]
-
-                    # line_bot_api.reply_message(
-                    #     event.reply_token, TextSendMessage(text=answer)
-                    # )
 
             except openai.BadRequestError as e:
                 # except openai.error.OpenAIError as e:
