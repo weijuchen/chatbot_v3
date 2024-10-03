@@ -47,7 +47,22 @@ def load_multiple_pdfs(pdf_folder_path):  # ***
 # pdf_docs = load_multiple_pdfs(pdf_folder_path)
 # print(pdf_docs)  # 這將打印所有 PDF 檔案的路徑
 
-def get_chunks
+def get_chunk(docs):
+    # split your docs into texts chunks
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=1000,
+        chunk_overlap=50,
+        separators=["\n", "。", "！", "？", "，", "、", ""],
+    )
+    chunks = text_splitter.split_documents(docs)
+    return chunks
+
+    # load my PDFs
+pdf_folder_path = os.getenv("PDF_FOLDER_PATH")
+docs = load_multiple_pdfs(pdf_folder_path)
+
+texts=get_chunk(docs)
+vectorstore.add_texts(texts)
 
 openai_api_key = os.getenv("OPENAI_API_KEY")
 def create_vector():
@@ -55,13 +70,7 @@ def create_vector():
     pdf_folder_path = os.getenv("PDF_FOLDER_PATH")
     docs = load_multiple_pdfs(pdf_folder_path)
 
-    # split your docs into texts chunks
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,
-        chunk_overlap=50,
-        separators=["\n", "。", "！", "？", "，", "、", ""],
-    )
-    texts = text_splitter.split_documents(docs)
+
 
     # embed the chunks into vectorstore (FAISS)
     embeddings = OpenAIEmbeddings()
