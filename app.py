@@ -1,3 +1,6 @@
+# prepare to use Qudrant 
+
+
 import os
 import sys
 import openai
