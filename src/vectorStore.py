@@ -16,7 +16,6 @@ client = qdrant_client.QdrantClient(
 
 embeddings = OpenAIEmbeddings()
 
-embeddings = OpenAIEmbeddings()
 
 vectorstore = Qdrant(
     client=client,
@@ -71,8 +70,9 @@ def get_chunk(docs):
 
 pdf_folder_path = os.getenv("PDF_FOLDER_PATH")
 docs = load_multiple_pdfs(pdf_folder_path)
-
+print("type of docs",type(docs))
 texts = get_chunk(docs)
+print("type of texts",type(texts))
 vectorstore.add_texts(texts)
 
 # Create a Qdrant instance
