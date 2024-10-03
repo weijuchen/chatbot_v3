@@ -1,4 +1,8 @@
-# prepare to use Qudrant 
+# prepare to use Qudrant
+
+from langchain.vectorstores import Qdrant
+# from langchain.embeddings.openai import OpenAIEmbeddings
+import qdrant_client
 
 
 import os
