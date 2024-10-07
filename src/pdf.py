@@ -47,6 +47,9 @@ def load_multiple_pdfs(pdf_folder_path):  # ***
 # pdf_docs = load_multiple_pdfs(pdf_folder_path)
 # print(pdf_docs)  # 這將打印所有 PDF 檔案的路徑
 
+
+
+
 def get_chunk(docs):
     # split your docs into texts chunks
     text_splitter = RecursiveCharacterTextSplitter(

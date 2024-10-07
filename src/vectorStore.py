@@ -7,6 +7,11 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_qdrant import QdrantVectorStore
 from dotenv import load_dotenv
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from qdrant_client import QdrantClient
+from qdrant_client.http.models import PointStruct
+import openai
+# uuid is used to generate unique IDs for the points
+import uuid
 
 
 client = qdrant_client.QdrantClient(
@@ -55,25 +60,49 @@ def load_multiple_pdfs(pdf_folder_path):  # ***
 # print(pdf_docs)  # 這將打印所有 PDF 檔案的路徑
 
 
-def get_chunk(docs):
-    # split your docs into texts chunks
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,
-        chunk_overlap=50,
-        separators=["\n", "。", "！", "？", "，", "、", ""],
+def get_embedding(text_chunks, model_id="text-embedding-ada-002"):
+    points = []
+    for idx, chunk in enumerate(text_chunks):
+        response = openai.Embedding.create(input=chunk, model=model_id)
+        embeddings = response["data"][0]["embedding"]
+        point_id = str(uuid.uuid4())  # Generate a unique ID for the point
+        points.append(
+            PointStruct(id=point_id, vector=embeddings, payload={"text": chunk})
+        )
+
+    return points
+
+connection = QdrantClient(
+    url=os.getenv("QDRANT_HOST"),
+)
+
+def insert_data(get_points):
+    operation_info = connection.upsert(
+        collection_name=os.getenv("QDRANT_COLLECTION_NAME"),
+        wait=True,
+        points=get_points,
     )
-    chunks = text_splitter.split_documents(docs)
-    return chunks
-
-    # load my PDFs
 
 
-pdf_folder_path = os.getenv("PDF_FOLDER_PATH")
-docs = load_multiple_pdfs(pdf_folder_path)
-print("type of docs",type(docs))
-texts = get_chunk(docs)
-print("type of texts",type(texts))
-vectorstore.add_texts(texts)
+# def get_chunk(docs):
+#     # split your docs into texts chunks
+#     text_splitter = RecursiveCharacterTextSplitter(
+#         chunk_size=1000,
+#         chunk_overlap=50,
+#         separators=["\n", "。", "！", "？", "，", "、", ""],
+#     )
+#     chunks = text_splitter.split_documents(docs)
+#     return chunks
+
+# load my PDFs
+
+
+# pdf_folder_path = os.getenv("PDF_FOLDER_PATH")
+# docs = load_multiple_pdfs(pdf_folder_path)
+# print("type of docs",type(docs))
+# texts = get_chunk(docs)
+# print("type of texts",type(texts))
+# vectorstore.add_texts(texts)
 
 # Create a Qdrant instance
 # vectorstore = QdrantVectorStore(
