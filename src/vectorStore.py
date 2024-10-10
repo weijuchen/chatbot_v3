@@ -1,7 +1,10 @@
 # create your vector store
 import os
+
+
 from langchain_community.embeddings import OpenAIEmbeddings
-from langchain.vectorstores import Qdrant
+from langchain_community.vectorstores import Qdrant
+# from langchain.vectorstores import Qdrant
 import qdrant_client
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_qdrant import QdrantVectorStore
@@ -12,7 +15,7 @@ from qdrant_client.http.models import PointStruct
 import openai
 # uuid is used to generate unique IDs for the points
 import uuid
-
+from langchain_community.embeddings import OpenAIEmbeddings
 
 client = qdrant_client.QdrantClient(
         os.getenv("QDRANT_HOST"),
@@ -53,12 +56,22 @@ def load_multiple_pdfs(pdf_folder_path):  # ***
             )  # *** Get full path of the file
             loader = PyPDFLoader(file_path)  # *** Load the PDF using PyPDFLoader
             docs.extend(loader.load())  # *** Add loaded documents to docs list
+    print("PDFs loaded successfully")        
     return docs  # *** Return the full list of documents
 
 
 # pdf_docs = load_multiple_pdfs(pdf_folder_path)
 # print(pdf_docs)  # 這將打印所有 PDF 檔案的路徑
-
+def get_chunk(docs):
+    # split your docs into texts chunks
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=1000,
+        chunk_overlap=50,
+        separators=["\n", "。", "！", "？", "，", "、", ""],
+    )
+    chunks = text_splitter.split_documents(docs)
+    print("Texts split successfully")
+    return chunks
 
 def get_embedding(text_chunks, model_id="text-embedding-ada-002"):
     points = []
@@ -69,7 +82,7 @@ def get_embedding(text_chunks, model_id="text-embedding-ada-002"):
         points.append(
             PointStruct(id=point_id, vector=embeddings, payload={"text": chunk})
         )
-
+    print("Embedding generated successfully")
     return points
 
 connection = QdrantClient(
@@ -81,18 +94,15 @@ def insert_data(get_points):
         collection_name=os.getenv("QDRANT_COLLECTION_NAME"),
         wait=True,
         points=get_points,
+        
     )
+    print("Data inserted successfully")
 
+get_raw_text=load_multiple_pdfs(pdf_folder_path)
+chunks=get_chunk(get_raw_text)
+vectors=get_embedding(chunks)
+insert_data(vectors)
 
-# def get_chunk(docs):
-#     # split your docs into texts chunks
-#     text_splitter = RecursiveCharacterTextSplitter(
-#         chunk_size=1000,
-#         chunk_overlap=50,
-#         separators=["\n", "。", "！", "？", "，", "、", ""],
-#     )
-#     chunks = text_splitter.split_documents(docs)
-#     return chunks
 
 # load my PDFs
 
@@ -110,3 +120,5 @@ def insert_data(get_points):
 #     collection_name=os.getenv("QDRANT_COLLECTION_NAME"),
 #     embeddings=OpenAIEmbeddings(),
 # )
+
+#test
