@@ -1,8 +1,10 @@
 # create your vector store
 import os
-
-
+from openai import OpenAI
 from langchain_community.embeddings import OpenAIEmbeddings
+from langchain_community.embeddings import OpenAIEmbeddings
+from langchain_openai import OpenAIEmbeddings
+
 from langchain_community.vectorstores import Qdrant
 # from langchain.vectorstores import Qdrant
 import qdrant_client
@@ -17,8 +19,8 @@ import openai
 import uuid
 from langchain_community.embeddings import OpenAIEmbeddings
 
-client = qdrant_client.QdrantClient(
-        os.getenv("QDRANT_HOST"),
+client_qdrant = qdrant_client.QdrantClient(
+        url=os.getenv("QDRANT_HOST"),
         api_key=os.getenv("QDRANT_API_KEY")
     )
 
@@ -26,7 +28,7 @@ embeddings = OpenAIEmbeddings()
 
 
 vectorstore = Qdrant(
-    client=client,
+    client=client_qdrant,
     collection_name=os.getenv("QDRANT_COLLECTION_NAME"),
     embeddings=embeddings,
 )
@@ -73,11 +75,18 @@ def get_chunk(docs):
     print("Texts split successfully")
     return chunks
 
+client = OpenAI(
+    #  api_key=os.getenv["OPENAI_API_KEY"]
+    api_key=os.getenv("OPENAI_API_KEY")
+)
+
 def get_embedding(text_chunks, model_id="text-embedding-ada-002"):
     points = []
     for idx, chunk in enumerate(text_chunks):
-        response = openai.Embedding.create(input=chunk, model=model_id)
-        embeddings = response["data"][0]["embedding"]
+        response = client.embeddings.create(input=chunk, model=model_id)
+        # embeddings = response["data"][0]["embedding"]
+        embeddings = response.data[0].embedding
+        #  return client.embeddings.create(input = [text], model=model).data[0].embedding
         point_id = str(uuid.uuid4())  # Generate a unique ID for the point
         points.append(
             PointStruct(id=point_id, vector=embeddings, payload={"text": chunk})
@@ -85,11 +94,20 @@ def get_embedding(text_chunks, model_id="text-embedding-ada-002"):
     print("Embedding generated successfully")
     return points
 
-connection = QdrantClient(
-    url=os.getenv("QDRANT_HOST"),
-)
+
+connection = QdrantClient(url=os.getenv("QDRANT_HOST"),
+                          api_key=os.getenv("QDRANT_API_KEY"),
+                          timeout=60
+                          
+                          )  # 增加超時到60秒
+# response = connection.get_collections()
+# print("host",os.getenv("QDRANT_HOST"))
+# print("name",os.getenv("QDRANT_COLLECTION_NAME"))
+# print("test response",response)
 
 def insert_data(get_points):
+
+
     operation_info = connection.upsert(
         collection_name=os.getenv("QDRANT_COLLECTION_NAME"),
         wait=True,
@@ -121,4 +139,4 @@ insert_data(vectors)
 #     embeddings=OpenAIEmbeddings(),
 # )
 
-#test
+# test
