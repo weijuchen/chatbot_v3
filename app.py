@@ -3,7 +3,8 @@
 from langchain.vectorstores import Qdrant
 # from langchain.embeddings.openai import OpenAIEmbeddings
 import qdrant_client
-
+from qdrant_client import QdrantClient
+from langchain.vectorstores import Qdrant
 
 import os
 import sys
@@ -26,8 +27,10 @@ from linebot.models import MessageEvent, AudioMessage, TextMessage, TextSendMess
 
 # 使用pdf.py 中的get_qa_chain函數
 # from src.pdf import create_vector, load_vectorstore
-from src.pdf import load_vectorstore
+# from src.pdf import load_vectorstore
+from src.vectorStore import load_vectorstore
 
+vectorstore = load_vectorstore()
 # from src.pdf import create_vector
 
 # load environment variable
@@ -56,6 +59,9 @@ parser = WebhookHandler(channel_secret)
 
 openai_api_key = os.getenv("OPENAI_API_KEY")
 
+client_qdrant = qdrant_client.QdrantClient(
+    url=os.getenv("QDRANT_HOST"), api_key=os.getenv("QDRANT_API_KEY")
+)
 model = ChatOpenAI(
     model="gpt-3.5-turbo",
     openai_api_key=openai_api_key,
@@ -63,29 +69,21 @@ model = ChatOpenAI(
     # streamling=True,
     # streamling means that the model response will be generated in a streaming fashion
 )
-# vectorstore = create_vector()
 
-# 確保 FAISS 向量存儲目錄存在
-vectorstore_path = os.getenv("FAISS_VECTORSTORE_PATH")
 
-if vectorstore_path:
-    os.makedirs(vectorstore_path, exist_ok=True)
-else:
-    print("FAISS_VECTORSTORE_PATH is not set.")
-
-vectorstore = load_vectorstore()
-
+# Initialize OpenAI embeddings
 embeddings = OpenAIEmbeddings()
-# vectorstore = FAISS.load_local("faiss_midjourney_docs", embeddings)
-# vectorstore.save_local("faiss_midjourney_docs")
 
-# Load the FAISS Vector Store with Dangerous Deserialization Enabled
-try:
-    retriever = FAISS.load_local(
-        "faiss_vectorstore", embeddings, allow_dangerous_deserialization=True
-    ).as_retriever(search_type="similarity", search_kwargs={"k": 1})
-except Exception as e:
-    print(f"Error loading vectorstore: {e}")
+# Initialize Qdrant Client and connect to the collection
+qdrant_client = QdrantClient(api_key=os.getenv("QDRANT_API_KEY"))
+vectorstore = Qdrant(
+    client=qdrant_client,
+    collection_name="court-document-collection",
+    embeddings=embeddings,
+)
+
+# Set up retriever
+retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 1})
 
 
 memory = ConversationBufferMemory(
@@ -94,12 +92,21 @@ memory = ConversationBufferMemory(
     inupt_key="question",
     output_key="answer",
 )
+# Create Conversational Retrieval Chain
 qa_chain = ConversationalRetrievalChain.from_llm(
     llm=model,
     memory=memory,
     retriever=retriever,
     verbose=True,
 )
+
+
+# qa_chain = ConversationalRetrievalChain.from_llm(
+#     llm=model,
+#     memory=memory,
+#     retriever=retriever,
+#     verbose=True,
+# )
 
 
 @app.route("/callback", methods=["POST"])

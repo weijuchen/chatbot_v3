@@ -107,7 +107,6 @@ connection = QdrantClient(url=os.getenv("QDRANT_HOST"),
 
 def insert_data(get_points):
 
-
     operation_info = connection.upsert(
         collection_name=os.getenv("QDRANT_COLLECTION_NAME"),
         wait=True,
@@ -116,10 +115,87 @@ def insert_data(get_points):
     )
     print("Data inserted successfully")
 
-get_raw_text=load_multiple_pdfs(pdf_folder_path)
-chunks=get_chunk(get_raw_text)
-vectors=get_embedding(chunks)
-insert_data(vectors)
+
+def load_vectorstore():
+    client_qdrant = qdrant_client.QdrantClient(
+        url=os.getenv("QDRANT_HOST"), api_key=os.getenv("QDRANT_API_KEY")
+    )
+
+    embeddings = OpenAIEmbeddings()
+
+    vectorstore = Qdrant(
+        client=client_qdrant,
+        collection_name=os.getenv("QDRANT_COLLECTION_NAME"),
+        embeddings=embeddings,
+    )
+
+    return vectorstore
+
+
+def create_answer_with_context(query):
+    # Step 1: Generate embeddings for the input query
+    #   response = openai.Embedding.create(
+    response = client.embeddings.create(input=query, model="text-embedding-ada-002")
+
+    # Step 2: Extract embeddings from the response
+    embeddings = response.data[0].embedding
+    # embeddings = response['data'][0]['embedding']
+
+    # Step 3: Search for relevant results in the collection using embeddings
+    search_result = connection.search(
+        collection_name=os.getenv("QDRANT_COLLECTION_NAME"),
+        query_vector=embeddings,
+        limit=3,
+    )
+
+    # Print the input query for debugging
+    print("Question: ", query, "\n")
+
+    # Step 4: Initialize the prompt string
+    prompt = ""
+
+    # Step 5: Iterate over the search results and concatenate the texts
+    for result in search_result:
+        # print(result.payload["text"])
+        # print(result.payload["text"].page_content)
+        print(result.payload["text"]["page_content"])
+        prompt += result.payload["text"]["page_content"]
+
+    # Step 6: 使用引導型 prompt
+    concatenated_string = f"""
+    # {prompt}  # 這裡是從 PDF 中提取的相關內容
+    這裡是從法律文件中提取的相關內容，但回答時請不要引用這些內容
+    The following is relevant context information extracted from legal documents:
+    {prompt}
+    根據上下文及FAQ_0925 pdf檔案，請依照FAQ_0925 pdf回答方式，回答開頭可以像是謝謝你向我分享這件事情，我很高興有這個機會可以協助你，以回答這個問題: "{query}".
+    """
+
+    # Step 7: Use the ChatCompletion model to generate a response
+    completion = openai.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role": "user", "content": concatenated_string}],
+        temperature=0.3,  # 調整溫度來控制回答的多樣性
+    )
+
+    # Step 7: Use the ChatCompletion model to generate a response
+    # completion = openai.ChatCompletion.create(
+    # completion = openai.chat.completions.create(
+
+    #     model="gpt-3.5-turbo",
+    #     messages=[{"role": "user", "content": concatenated_string}],
+    # )
+
+    # Step 8: Return the generated content from the model
+    return completion.choices[0].message.content
+
+
+# get_raw_text = load_multiple_pdfs(pdf_folder_path)
+# chunks = get_chunk(get_raw_text)
+# vectors = get_embedding(chunks)
+# insert_data(vectors)
+# question = "我在網路上認識一位軍醫，他向我介紹虛擬貨幣投資，請問是詐騙嗎?"
+# answer = create_answer_with_context(question)
+# print("Answer:", answer, "\n")
 
 
 # load my PDFs
